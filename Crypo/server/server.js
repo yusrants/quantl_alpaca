@@ -15,12 +15,29 @@ app.get('/hitoricalbars/:symbol/:timeframe', (req,res)=>{
 
     const symbol = req.params.symbol;
     const timeframe = req.params.timeframe;
+    
+  // Get the current date
+  var currentDate = new Date();
+
+  // Subtract 10 years from the current date
+  var startDate = new Date(currentDate);
+  startDate.setFullYear(currentDate.getFullYear() - 10);
+
+  // Format the dates to string in "YYYY-MM-DD" format
+  var start = startDate.toISOString().slice(0, 10);
+  var end = currentDate.toISOString().slice(0, 10);
+
+  console.log("Start Date 10 years ago:", start);
+  console.log("End Date today:", end);
+    console.log("Date is " + start);
+
     var response_bars = {}
 
     let config = {
         method: 'get',
         maxBodyLength: Infinity,
-        url: `https://data.sandbox.alpaca.markets/v2/stocks/${symbol}/bars?timeframe=${timeframe}&limit=1000&adjustment=raw&feed=sip&sort=asc`,
+        url: `https://data.sandbox.alpaca.markets/v2/stocks/${symbol}/bars?timeframe=${timeframe}` +
+        `&start=${start}&limit=1000&adjustment=raw&feed=sip&sort=asc`,
         headers: { 
           'Authorization': `Basic ${encoded_auth}`
         }
