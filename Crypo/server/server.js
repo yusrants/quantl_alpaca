@@ -9,12 +9,21 @@ const encoded_auth = Buffer.from(username + ':' + password).toString('base64');
 
 app.use(express.static('public'))
 
-
 // Creating an API endpoint for Hitorical Bars
-app.get('/hitoricalbars/:symbol/:timeframe', (req,res)=>{
+
+/*
+Timeframes could be:
+[1-59]Min / T
+[1-23]Hour / H
+1Day / D
+1Week / W
+[1,2,3,4,6,12]Month / M
+*/
+app.get('/historicalbars/:symbol/:timeframe', (req,res)=>{
 
     const symbol = req.params.symbol;
     const timeframe = req.params.timeframe;
+    const limit = "3000"
     
   // Get the current date
   var currentDate = new Date();
@@ -37,7 +46,7 @@ app.get('/hitoricalbars/:symbol/:timeframe', (req,res)=>{
         method: 'get',
         maxBodyLength: Infinity,
         url: `https://data.sandbox.alpaca.markets/v2/stocks/${symbol}/bars?timeframe=${timeframe}` +
-        `&start=${start}&limit=1000&adjustment=raw&feed=sip&sort=asc`,
+        `&start=${start}&limit=${limit}&adjustment=raw&feed=sip&sort=asc`,
         headers: { 
           'Authorization': `Basic ${encoded_auth}`
         }
@@ -49,7 +58,7 @@ app.get('/hitoricalbars/:symbol/:timeframe', (req,res)=>{
         res.status(200).send(response_bars)
       })
       .catch((error) => {
-        console.log(error);
+        res.status(200).send(error)
       });
       
 })
