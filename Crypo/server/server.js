@@ -73,63 +73,76 @@ app.get('/historicalbars/:symbol/:timeframe', (req,res)=>{
       
 })
 
-// Starting a web socket for real-time stock data
-const getData = (symbol) => {
-  // Alpaca WebSocket connection
-  const alpacaSocket = new WebSocket('wss://stream.data.sandbox.alpaca.markets/v2/iex');
+// Alpaca WebSocket connection
+const alpacaSocket = new WebSocket('wss://stream.data.sandbox.alpaca.markets/v2/iex');
 
-  // Connection opened
-  alpacaSocket.addEventListener('open', (event) => {
-    console.log('Alpaca WebSocket connection opened:', event);
+// Function to handle sending messages safely
+const sendWebSocketMessage = (message) => {
+  // Check if the WebSocket is open before sending
+  if (alpacaSocket.readyState === WebSocket.OPEN) {
+    alpacaSocket.send(JSON.stringify(message));
+  } else {
+    console.error('WebSocket is not open. Unable to send message.');
+  }
+};
 
-    // Authenticating using credentials
-    const authMessage = {"action": "auth", "key": username, "secret": password};
-    alpacaSocket.send(JSON.stringify(authMessage));
+// Connection opened
+alpacaSocket.addEventListener('open', (event) => {
+  console.log('Alpaca WebSocket connection opened:', event);
 
-    // Subscribing to the provided symbol
-    const subscribeMessage = {"action": "subscribe", "trades": [symbol], "quotes": [symbol], "bars": [symbol], "dailyBars": [symbol], "statuses": [symbol]};
-    alpacaSocket.send(JSON.stringify(subscribeMessage));
-  });
+  // Authenticating using credentials
+  const authMessage = {"action": "auth", "key": username, "secret": password};
+  sendWebSocketMessage(authMessage);
 
-  // Listen for messages from Alpaca WebSocket
-  alpacaSocket.addEventListener('message', (event) => {
-    const message = JSON.parse(event.data);
-    console.log('Received message from Alpaca:', message);
+  // Subscribe to symbols
+  subscribeToSymbol('AAPL');
+  subscribeToSymbol('MSFT');
+  subscribeToSymbol('GOOGL');
+  // You can subscribe to more symbols as needed
+});
 
-    // Emit the message to Socket.IO clients
-    io.emit('dataFromAlpaca', message);
-  });
+// Listen for messages from Alpaca WebSocket
+alpacaSocket.addEventListener('message', (event) => {
+  const message = JSON.parse(event.data);
+  console.log('Received message from Alpaca:', message);
 
-  // Listen for WebSocket errors
-  alpacaSocket.addEventListener('error', (event) => {
-    console.error('Alpaca WebSocket error:', event);
-  });
+  // Emit the message to Socket.IO clients
+  io.emit('dataFromAlpaca', message);
+});
 
-  // Listen for WebSocket closures
-  alpacaSocket.addEventListener('close', (event) => {
-    console.log('Alpaca WebSocket connection closed:', event);
-  });
+// Listen for WebSocket errors
+alpacaSocket.addEventListener('error', (event) => {
+  console.error('Alpaca WebSocket error:', event);
+});
 
-  // Socket.IO connection
-  io.on('connection', (socket) => {
-    console.log('Socket.IO client connected');
+// Listen for WebSocket closures
+alpacaSocket.addEventListener('close', (event) => {
+  console.log('Alpaca WebSocket connection closed:', event);
+});
 
-    // You can add more Socket.IO event listeners here if needed
-  });
+// Socket.IO connection
+io.on('connection', (socket) => {
+  console.log('Socket.IO client connected');
 
-  // Express route to serve frontend where the data is being received
-  app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
-  });
+  // You can add more Socket.IO event listeners here if needed
+});
 
-  // Start the server
-  const PORT = 3000;
-  server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
-}
+// Express route to serve frontend where the data is being received
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
 
-// Example usage
-getData('AAPL');
+// Start the server
+const PORT = 3000;
+server.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+
+// Function to subscribe to a symbol
+const subscribeToSymbol = (symbol) => {
+  const subscribeMessage = {"action": "subscribe", "trades": [symbol], "quotes": [symbol], "bars": [symbol], "dailyBars": [symbol], "statuses": [symbol]};
+  sendWebSocketMessage(subscribeMessage);
+};
+
 app.listen(port, () => console.log("The server is running!"))
 
