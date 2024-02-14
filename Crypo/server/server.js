@@ -74,61 +74,62 @@ app.get('/historicalbars/:symbol/:timeframe', (req,res)=>{
 })
 
 // Starting a web socket for real-time stock data
-getData = () => {
-  
+const getData = (symbol) => {
   // Alpaca WebSocket connection
   const alpacaSocket = new WebSocket('wss://stream.data.sandbox.alpaca.markets/v2/iex');
-  
+
   // Connection opened
   alpacaSocket.addEventListener('open', (event) => {
-      console.log('Alpaca WebSocket connection opened:', event);
-  
-      // Authenticating using credentials
-      const authMessage = {"action": "auth", "key": username, "secret": password};
-      alpacaSocket.send(JSON.stringify(authMessage));
-  
-      // Subscribing to symbols like AAPL
-      const subscribeMessage = {"action": "subscribe", "trades": ["AAPL"], "quotes": ["AMD", "CLDR"], "bars": ["*"], "dailyBars": ["VOO"], "statuses": ["*"]};
-      alpacaSocket.send(JSON.stringify(subscribeMessage));
+    console.log('Alpaca WebSocket connection opened:', event);
+
+    // Authenticating using credentials
+    const authMessage = {"action": "auth", "key": username, "secret": password};
+    alpacaSocket.send(JSON.stringify(authMessage));
+
+    // Subscribing to the provided symbol
+    const subscribeMessage = {"action": "subscribe", "trades": [symbol], "quotes": [symbol], "bars": [symbol], "dailyBars": [symbol], "statuses": [symbol]};
+    alpacaSocket.send(JSON.stringify(subscribeMessage));
   });
-  
+
   // Listen for messages from Alpaca WebSocket
   alpacaSocket.addEventListener('message', (event) => {
-      const message = JSON.parse(event.data);
-      console.log('Received message from Alpaca:', message);
-  
-      // Emit the message to Socket.IO clients
-      io.emit('dataFromAlpaca', message);
+    const message = JSON.parse(event.data);
+    console.log('Received message from Alpaca:', message);
+
+    // Emit the message to Socket.IO clients
+    io.emit('dataFromAlpaca', message);
   });
-  
+
   // Listen for WebSocket errors
   alpacaSocket.addEventListener('error', (event) => {
-      console.error('Alpaca WebSocket error:', event);
+    console.error('Alpaca WebSocket error:', event);
   });
-  
+
   // Listen for WebSocket closures
   alpacaSocket.addEventListener('close', (event) => {
-      console.log('Alpaca WebSocket connection closed:', event);
+    console.log('Alpaca WebSocket connection closed:', event);
   });
-  
+
   // Socket.IO connection
   io.on('connection', (socket) => {
-      console.log('Socket.IO client connected');
-  
-      // You can add more Socket.IO event listeners here if needed
+    console.log('Socket.IO client connected');
+
+    // You can add more Socket.IO event listeners here if needed
   });
-  
-// Express route to serve frontend where the data is being received
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
+
+  // Express route to serve frontend where the data is being received
+  app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+  });
 
   // Start the server
   const PORT = 3000;
   server.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}`);
+    console.log(`Server listening on port ${PORT}`);
   });
 }
-getData();
+
+// Example usage
+getData('AAPL');
 app.listen(port, () => console.log("The server is running!"))
 
